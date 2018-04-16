@@ -1,0 +1,9 @@
+{
+  "name": "urg-unity",
+  "version": "0.0.1",
+  "description": "A unity pluguin for Urg sensor.",
+  "keywords": [
+    "unity3d",
+    "unity3d-package"
+  ]
+}
