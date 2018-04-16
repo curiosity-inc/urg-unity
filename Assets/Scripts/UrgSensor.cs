@@ -98,12 +98,12 @@ namespace Urg
         private bool Open()
         {
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
-        var portExists = File.Exists(PortName);
-        if (!portExists)
-        {
-            Debug.LogWarning(string.Format("Port {0} does not exist.", PortName));
-            return false;
-        }
+            var portExists = File.Exists(portName);
+            if (!portExists)
+            {
+                Debug.LogWarning(string.Format("Port {0} does not exist.", portName));
+                return false;
+            }
 #endif
 
             bool openSuccess = false;
@@ -117,7 +117,7 @@ namespace Urg
                         Debug.Log("Opening URG Serial connection...");
                     }
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
-                serialPort_.ReadTimeout = 1000;
+                    serialPort.ReadTimeout = 1000;
 #else
                     serialPort.ReadTimeout = 10;
 #endif
@@ -190,44 +190,44 @@ namespace Urg
         private void Read()
         {
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
-                while (serialPort_.BytesToRead > 0)
-                {
+            while (serialPort.BytesToRead > 0)
+            {
 #endif
-            string command = serialPort.ReadLine();
-            string status = serialPort.ReadLine();
+                string command = serialPort.ReadLine();
+                string status = serialPort.ReadLine();
 
-            if (debugMode)
-            {
-                Debug.Log(string.Format("{0}:{1}", command, status));
-            }
-
-            if (command.StartsWith(COMMAND_GET_DISTANCE_ONCE))
-            {
-                if (status.StartsWith(STATUS_SUCCESS))
+                if (debugMode)
                 {
-                    ReadDistanceData();
+                    Debug.Log(string.Format("{0}:{1}", command, status));
                 }
-            }
-            else if (command.StartsWith(COMMAND_GET_DISTANCE_MULTI))
-            {
-                if (status.StartsWith(STATUS_SUCCESS))
+
+                if (command.StartsWith(COMMAND_GET_DISTANCE_ONCE))
                 {
+                    if (status.StartsWith(STATUS_SUCCESS))
+                    {
+                        ReadDistanceData();
+                    }
+                }
+                else if (command.StartsWith(COMMAND_GET_DISTANCE_MULTI))
+                {
+                    if (status.StartsWith(STATUS_SUCCESS))
+                    {
+                        serialPort.ReadLine();
+                    }
+                    else if (status.StartsWith(STATUS_GET_DISTANCE_SUCCESS))
+                    {
+                        ReadDistanceData();
+                    }
+                }
+                else if (command.StartsWith("SCIP"))
+                {
+                    // read another new line.
                     serialPort.ReadLine();
                 }
-                else if (status.StartsWith(STATUS_GET_DISTANCE_SUCCESS))
+                else
                 {
-                    ReadDistanceData();
+                    string empty = serialPort.ReadLine();
                 }
-            }
-            else if (command.StartsWith("SCIP"))
-            {
-                // read another new line.
-                serialPort.ReadLine();
-            }
-            else
-            {
-                string empty = serialPort.ReadLine();
-            }
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
             }
 #endif
