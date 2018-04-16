@@ -56,14 +56,11 @@ namespace Urg
         private SerialPort serialPort;
         private Thread thread;
         private bool isRunning = false;
-
         private float[] distances;
-        private int expectedNumOfDistanceBytes;
 
         void Awake()
         {
             distances = new float[DistanceLength];
-            expectedNumOfDistanceBytes = 3 * (endIndex - startIndex + 1);
 
             if (Open())
             {

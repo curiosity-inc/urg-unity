@@ -41,7 +41,8 @@ namespace Urg
 
         private void Urg_OnDistanceReceived(float[] distances)
         {
-            this.distances = distances;
+            // this.distances = distances;
+            this.distances = Utils.MedianFilter<float>(distances);
         }
     }
 }
