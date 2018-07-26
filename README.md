@@ -9,8 +9,10 @@ Import an unitypackage file found in Release page, or use npm (Node Package Mana
 ## Get started with your scene.
 
 1 (a) If you can find your sensor name under `Prefabs` folder, just drag'drop it to your scene.
+
 1 (b) If you cannot find existing prefab, you can attach necessary componenets to utilize your sensor. Attach `Scripts/UrgSensor` and `Scripts/Transport/EthernetTransport` (If your sensor is compatible with Ethernet) or `Scripts/Transport/SerialTransport` (If your sensor is compatible with RS232 over USB) to your GameObject.
-2. Refer `Example/DebugRenderer` to how to get distances (The main part is copied and pasted below).
+
+2 Refer `Example/DebugRenderer` to how to get distances (The main part is copied and pasted below).
 ```
         void Awake()
         {
