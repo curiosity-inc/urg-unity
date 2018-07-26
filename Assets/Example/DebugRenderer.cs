@@ -27,7 +27,7 @@ namespace Urg
                     for (int i = 0; i < distances.Length; i++)
                     {
                         float distance = distances[i];
-                        float angle = urg.StepAngle * i + urg.OffsetRadians;
+                        float angle = urg.StepAngleRadians * i + urg.OffsetRadians;
                         var cos = Mathf.Cos(angle);
                         var sin = Mathf.Sin(angle);
                         var dir = new Vector3(cos, sin, 0);

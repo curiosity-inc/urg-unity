@@ -1,30 +1,25 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.IO;
-using System.IO.Ports;
-using System.Text;
+﻿using UnityEngine;
 using System.Threading;
-using UnityEngine;
+using System.Text;
 
 namespace Urg
 {
     public class UrgSensor : MonoBehaviour
     {
-        public string portName = "/dev/tty.usbmodem1421";
-        public int baudRate = 115200;
-        public int startIndex = 44;
-        public int endIndex = 725;
+
+        public int startIndex = 0;
+        public int endIndex = 1080;
         [Tooltip("Angle offset of URG sensor in degree. Note that 0 means the front of the sensor.")]
-        public float offsetDegrees = -120;
-        public int stepPerRotation = 1024;
+        public float offsetDegrees = -135;
+        public float stepAngleDegrees = 0.25f;
+        public ITransport transport;
         public bool debugMode = false;
 
-        public float StepAngle
+        public float StepAngleRadians
         {
             get
             {
-                return 2.0f * Mathf.PI / stepPerRotation;
+                return Mathf.Deg2Rad * stepAngleDegrees;
             }
         }
         public float OffsetRadians
@@ -34,6 +29,13 @@ namespace Urg
                 return Mathf.Deg2Rad * offsetDegrees;
             }
         }
+
+        public delegate void DistanceReceivedEventHandler(float[] distances);
+        public event DistanceReceivedEventHandler OnDistanceReceived;
+
+        private bool isRunning = false;
+        private Thread thread;
+        private float[] distances;
 
         private readonly string COMMAND_GET_DISTANCE_ONCE = "GD";
         private readonly string COMMAND_GET_DISTANCE_MULTI = "MD";
@@ -50,25 +52,22 @@ namespace Urg
             }
         }
 
-        public delegate void DistanceReceivedEventHandler(float[] distances);
-        public event DistanceReceivedEventHandler OnDistanceReceived;
-
-        private SerialPort serialPort;
-        private Thread thread;
-        private bool isRunning = false;
-        private float[] distances;
-
         void Awake()
         {
+            transport = GetComponent<ITransport>();
             distances = new float[DistanceLength];
 
-            if (Open())
+            if (transport.Open())
             {
                 Thread.Sleep(200);
 
                 SCIP2();
                 Thread.Sleep(200);
                 Read();
+
+                //GetStatus();
+                //Thread.Sleep(200);
+                //Read();
 
                 StartScanning();
                 Thread.Sleep(200);
@@ -95,59 +94,6 @@ namespace Urg
             Close();
         }
 
-        private bool Open()
-        {
-#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
-            var portExists = File.Exists(portName);
-            if (!portExists)
-            {
-                Debug.LogWarning(string.Format("Port {0} does not exist.", portName));
-                return false;
-            }
-#endif
-
-            bool openSuccess = false;
-            serialPort = new SerialPort(portName, baudRate, Parity.None, 8, StopBits.One);
-            for (int i = 0; i < 1; i++)
-            {
-                try
-                {
-                    if (debugMode)
-                    {
-                        Debug.Log("Opening URG Serial connection...");
-                    }
-#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
-                    serialPort.ReadTimeout = 1000;
-#else
-                    serialPort.ReadTimeout = 10;
-#endif
-                    serialPort.WriteTimeout = 1000;
-                    serialPort.ReadBufferSize = 4096;
-                    serialPort.NewLine = "\n";
-                    serialPort.Open();
-                    openSuccess = true;
-                    break;
-                }
-                catch (IOException ex)
-                {
-                    Debug.LogWarning("error:" + ex.ToString());
-                }
-                Thread.Sleep(2000);
-            }
-
-            if (!openSuccess)
-            {
-                return false;
-            }
-
-            if (debugMode)
-            {
-                Debug.Log("Opened URG Serial connection.");
-            }
-
-            return true;
-        }
-
         private void Close()
         {
             isRunning = false;
@@ -161,16 +107,16 @@ namespace Urg
                 thread.Join();
             }
 
-            if (serialPort != null && serialPort.IsOpen)
+            if (transport.IsConnected())
             {
-                serialPort.Close();
-                serialPort.Dispose();
+                transport.Close();
             }
         }
 
         private void ReadLoop()
         {
-            while (isRunning && serialPort != null && serialPort.IsOpen)
+            Debug.Log("Read loop started.");
+            while (isRunning && transport.IsConnected())
             {
                 try
                 {
@@ -178,69 +124,63 @@ namespace Urg
                 }
                 catch (System.TimeoutException e)
                 {
-                    // ignore
+                    Debug.LogWarning(e.Message + ":" + e.StackTrace);
                 }
                 catch (System.Exception e)
                 {
                     Debug.LogWarning(e.Message + ":" + e.StackTrace);
                 }
             }
+            Debug.Log("Read loop finished.");
         }
 
         private void Read()
         {
-#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
-            while (serialPort.BytesToRead > 0)
+            string command = transport.ReadLine();
+            string status = transport.ReadLine();
+
+            if (debugMode)
             {
-#endif
-                string command = serialPort.ReadLine();
-                string status = serialPort.ReadLine();
-
-                if (debugMode)
-                {
-                    Debug.Log(string.Format("{0}:{1}", command, status));
-                }
-
-                if (command.StartsWith(COMMAND_GET_DISTANCE_ONCE))
-                {
-                    if (status.StartsWith(STATUS_SUCCESS))
-                    {
-                        ReadDistanceData();
-                    }
-                }
-                else if (command.StartsWith(COMMAND_GET_DISTANCE_MULTI))
-                {
-                    if (status.StartsWith(STATUS_SUCCESS))
-                    {
-                        serialPort.ReadLine();
-                    }
-                    else if (status.StartsWith(STATUS_GET_DISTANCE_SUCCESS))
-                    {
-                        ReadDistanceData();
-                    }
-                }
-                else if (command.StartsWith("SCIP"))
-                {
-                    // read another new line.
-                    serialPort.ReadLine();
-                }
-                else
-                {
-                    string empty = serialPort.ReadLine();
-                }
-#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+                Debug.Log(string.Format("{0}:{1}", command, status));
             }
-#endif
+
+            if (command.StartsWith(COMMAND_GET_DISTANCE_ONCE))
+            {
+                if (status.StartsWith(STATUS_SUCCESS))
+                {
+                    ReadDistanceData();
+                }
+            }
+            else if (command.StartsWith(COMMAND_GET_DISTANCE_MULTI))
+            {
+                if (status.StartsWith(STATUS_SUCCESS))
+                {
+                    transport.ReadLine();
+                }
+                else if (status.StartsWith(STATUS_GET_DISTANCE_SUCCESS))
+                {
+                    ReadDistanceData();
+                }
+            }
+            else if (command.StartsWith("SCIP"))
+            {
+                // read another new line.
+                transport.ReadLine();
+            }
+            else
+            {
+                string empty = transport.ReadLine();
+            }
         }
 
         private void ReadDistanceData()
         {
-            string timeStamp = serialPort.ReadLine();
+            string timeStamp = transport.ReadLine();
             string data = "";
 
             while (true)
             {
-                string line = serialPort.ReadLine();
+                string line = transport.ReadLine();
                 //Debug.Log(string.Format("read: {0}", line.Length));
                 if (line.Length == 0)
                 {
@@ -264,13 +204,11 @@ namespace Urg
         {
             try
             {
-                if (debugMode)
+                Debug.Log(string.Format("write: {0}", message));
+                if (transport.IsConnected())
                 {
-                    Debug.Log(string.Format("write: {0}", message));
-                }
-                if (serialPort != null && serialPort.IsOpen)
-                {
-                    serialPort.Write(message);
+                    var bytes = Encoding.GetEncoding("UTF-8").GetBytes(message);
+                    transport.Write(bytes);
                 }
             }
             catch (System.Exception e)
@@ -282,6 +220,11 @@ namespace Urg
         public void SCIP2()
         {
             Write("SCIP2.0\n");
+        }
+
+        public void GetStatus()
+        {
+            Write("VV\n");
         }
 
         public void StartScanning()
