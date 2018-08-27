@@ -12,10 +12,12 @@ namespace Urg
         private float[] distances;
         private readonly float MAX_DISTANCE = 3.0f;
         private readonly float MIN_DISTANCE = 0.001f;
+        private ClusteringFilter clusteringFilter;
 
         void Awake()
         {
             urg.OnDistanceReceived += Urg_OnDistanceReceived;
+            clusteringFilter = new ClusteringFilter(urg, 0.2f);
         }
 
         void Update()
@@ -30,11 +32,24 @@ namespace Urg
                         float angle = urg.StepAngleRadians * i + urg.OffsetRadians;
                         var cos = Mathf.Cos(angle);
                         var sin = Mathf.Sin(angle);
-                        var dir = new Vector3(cos, sin, 0);
+                        var dir = new Vector3(cos, 0, sin);
                         var pos = distance * dir;
 
                         Debug.DrawRay(urg.transform.position, pos, Color.blue);
                     }
+                }
+            }
+        }
+
+        private void OnDrawGizmos()
+        {
+            if (clusteringFilter != null)
+            {
+                var clustered = clusteringFilter.Fetch();
+                //Debug.Log(clustered.Count);
+                foreach (var location in clustered)
+                {
+                    Gizmos.DrawCube(location.ToPosition(), new Vector3(0.1f, 0.1f, 0.1f));
                 }
             }
         }
