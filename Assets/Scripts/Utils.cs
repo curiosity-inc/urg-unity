@@ -1,4 +1,5 @@
 ﻿using System;
+using UnityEngine;
 
 namespace Urg
 {
@@ -27,6 +28,19 @@ namespace Urg
                 }
             }
             return res;
+        }
+
+        public static Vector3 Screen2WorldPosition(Vector2 screenPosition, Camera camera, Plane basePlane)
+        {
+            var ray = camera.ScreenPointToRay(screenPosition);
+            var distance = 0f;
+
+            if (basePlane.Raycast(ray, out distance))
+            {
+                var p = ray.GetPoint(distance);
+                return p;
+            }
+            return Vector3.negativeInfinity;
         }
     }
 }
