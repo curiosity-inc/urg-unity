@@ -1,10 +1,11 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace Urg
 {
-    public class DetectedLocation
+    public class DetectedLocation : ICloneable
     {
         public float angle;
         public float distance;
@@ -15,6 +16,12 @@ namespace Urg
             this.distance = distance;
         }
 
+        public Vector2 ToPosition2D()
+        {
+            var pos3d = ToPosition(Vector3.forward, Vector3.up);
+            return new Vector2(pos3d.x, pos3d.z);
+        }
+
         public Vector3 ToPosition()
         {
             return ToPosition(Vector3.right, Vector3.up);
@@ -23,6 +30,11 @@ namespace Urg
         public Vector3 ToPosition(Vector3 forward, Vector3 normal)
         {
             return distance * (Quaternion.AngleAxis(-angle, normal) * forward);
+        }
+
+        public object Clone()
+        {
+            return new DetectedLocation(this.angle, this.distance);
         }
     }
 }
