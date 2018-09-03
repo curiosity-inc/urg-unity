@@ -346,11 +346,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   urg: {fileID: 1844693405}
-  sensorCorners:
-  - {x: 1, y: 1}
-  - {x: 1, y: -1}
-  - {x: 0.5, y: -1}
-  - {x: 0.5, y: 1}
 --- !u!1 &1272038615
 GameObject:
   m_ObjectHideFlags: 0
@@ -474,6 +469,11 @@ Prefab:
     - target: {fileID: 1964391196819068, guid: 3eaf2bf61050a4d27b43578e355c6b9b, type: 2}
       propertyPath: m_IsActive
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 114570632567851138, guid: 3eaf2bf61050a4d27b43578e355c6b9b,
+        type: 2}
+      propertyPath: debugMode
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: 3eaf2bf61050a4d27b43578e355c6b9b, type: 2}

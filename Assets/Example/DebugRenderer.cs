@@ -7,69 +7,110 @@ namespace Urg
     public class DebugRenderer : MonoBehaviour
     {
         public UrgSensor urg;
-        public Vector2[] sensorCorners;
 
         private float[] distances;
-        private readonly float MAX_DISTANCE = 3.0f;
-        private readonly float MIN_DISTANCE = 0.001f;
-        private ClusteringFilter clusteringFilter;
-        private AffineFilter affineFilter;
+        private List<DetectedLocation> locations;
+        private AffineConverter affineConverter;
+        private List<GameObject> debugObjects;
+        private Object syncLock = new Object();
 
         void Awake()
         {
             urg.OnDistanceReceived += Urg_OnDistanceReceived;
-            clusteringFilter = new ClusteringFilter(urg, 0.2f);
-            affineFilter = new AffineFilter(sensorCorners, Camera.main, new Plane(Vector3.up, Vector3.zero));
+            urg.OnLocationDetected += Urg_OnLocationDetected;
+            urg.AddFilter(new MedianFilter(3));
+            urg.AddFilter(new ClusteringFilter(0.15f));
+
+            var cam = Camera.main;
+            var plane = new Plane(Vector3.up, Vector3.zero);
+
+            var sensorCorners = new Vector2[4];
+            sensorCorners[0] = new Vector2(1.5f, 0.5f);
+            sensorCorners[1] = new Vector2(1.5f, -0.5f);
+            sensorCorners[2] = new Vector2(0.5f, -0.5f);
+            sensorCorners[3] = new Vector2(0.5f, 0.5f);
+
+            var worldCorners = new Vector3[4];
+            worldCorners[0] = Screen2WorldPosition(new Vector2(0, Screen.height), cam, plane);
+            worldCorners[1] = Screen2WorldPosition(new Vector2(Screen.width, Screen.height), cam, plane);
+            worldCorners[2] = Screen2WorldPosition(new Vector2(Screen.width, 0), cam, plane);
+            worldCorners[3] = Screen2WorldPosition(new Vector2(0, 0), cam, plane);
+            affineConverter = new AffineConverter(sensorCorners, worldCorners);
+
+            debugObjects = new List<GameObject>();
+            for (var i = 0; i < 100; i++)
+            {
+                var obj = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                obj.transform.parent = transform;
+                obj.transform.localScale = 0.3f * Vector3.one;
+                debugObjects.Add(obj);
+            }
         }
 
         void Update()
         {
-            if (urg != null)
+            if (urg == null)
             {
-                if (distances != null && distances.Length > 0)
-                {
-                    for (int i = 0; i < distances.Length; i++)
-                    {
-                        float distance = distances[i];
-                        float angle = urg.StepAngleRadians * i + urg.OffsetRadians;
-                        var cos = Mathf.Cos(angle);
-                        var sin = Mathf.Sin(angle);
-                        var dir = new Vector3(cos, 0, sin);
-                        var pos = distance * dir;
+                return;
+            }
 
-                        Debug.DrawRay(urg.transform.position, pos, Color.blue);
-                    }
+            if (distances != null && distances.Length > 0)
+            {
+                for (int i = 0; i < distances.Length; i++)
+                {
+                    float distance = distances[i];
+                    float angle = urg.StepAngleRadians * i + urg.OffsetRadians;
+                    var cos = Mathf.Cos(angle);
+                    var sin = Mathf.Sin(angle);
+                    var dir = new Vector3(cos, 0, sin);
+                    var pos = distance * dir;
+
+                    Debug.DrawRay(urg.transform.position, pos, Color.blue);
                 }
+            }
+
+            var locs = this.locations;
+            int index = 0;
+            foreach (var loc in locs)
+            {
+                Vector3 worldPos = new Vector3(0, 0, 0);
+                var inRegion = affineConverter.Sensor2WorldPosition(loc.ToPosition2D(), out worldPos);
+                if (inRegion && index < debugObjects.Count)
+                {
+                    //Gizmos.DrawCube(worldPos, new Vector3(0.1f, 0.1f, 0.1f));
+                    debugObjects[index].transform.position = worldPos;
+                    index++;
+                }
+            }
+
+            for (var i = index; i < debugObjects.Count; i++)
+            {
+                debugObjects[i].transform.position = new Vector3(100, 100, 100);
             }
         }
 
-        private void OnDrawGizmos()
+        void Urg_OnDistanceReceived(float[] rawDistances)
         {
-            if (clusteringFilter != null)
-            {
-                var clustered = clusteringFilter.Fetch();
-                //Debug.Log(clustered.Count);
-                var region = new Rect(0.6f, -0.7f, 1.4f, 1.4f);
-                //Gizmos.DrawLine(region.)
-
-                foreach (var location in clustered)
-                {
-                    var pos = location.ToPosition();
-                    var loc2d = new Vector2(pos.x, pos.z);
-                    Vector3 worldPos;
-                    var inRegion = affineFilter.Sensor2WorldPosition(loc2d, out worldPos);
-                    if (inRegion)
-                    {
-                        Gizmos.DrawCube(worldPos, new Vector3(0.1f, 0.1f, 0.1f));
-                    }
-                }
-            }
+            this.distances = rawDistances;
         }
 
-        private void Urg_OnDistanceReceived(float[] distances)
+        void Urg_OnLocationDetected(List<DetectedLocation> locations)
         {
-            //this.distances = distances;
-            this.distances = Utils.MedianFilter<float>(distances);
+            // this is called outside main thread.
+            this.locations = locations;
+        }
+
+        private static Vector3 Screen2WorldPosition(Vector2 screenPosition, Camera camera, Plane basePlane)
+        {
+            var ray = camera.ScreenPointToRay(screenPosition);
+            var distance = 0f;
+
+            if (basePlane.Raycast(ray, out distance))
+            {
+                var p = ray.GetPoint(distance);
+                return p;
+            }
+            return Vector3.negativeInfinity;
         }
     }
 }

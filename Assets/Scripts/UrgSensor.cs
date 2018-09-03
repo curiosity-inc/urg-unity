@@ -1,4 +1,6 @@
 ﻿using UnityEngine;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Text;
 
@@ -30,8 +32,13 @@ namespace Urg
             }
         }
 
-        public delegate void DistanceReceivedEventHandler(float[] distances);
+        public delegate void DistanceReceivedEventHandler(float[] rawDistances);
         public event DistanceReceivedEventHandler OnDistanceReceived;
+
+        public delegate void LocationDetectedEventHandler(List<DetectedLocation> locations);
+        public event LocationDetectedEventHandler OnLocationDetected;
+
+        private List<IFilter> locationFilters = new List<IFilter>();
 
         private bool isRunning = false;
         private Thread thread;
@@ -169,13 +176,14 @@ namespace Urg
             }
             else
             {
-                string empty = transport.ReadLine();
+                transport.ReadLine();
             }
         }
 
         private void ReadDistanceData()
         {
-            string timeStamp = transport.ReadLine();
+            // string timestamp = 
+            transport.ReadLine();
             string data = "";
 
             while (true)
@@ -197,6 +205,24 @@ namespace Urg
             if (OnDistanceReceived != null)
             {
                 OnDistanceReceived(distances);
+            }
+
+            var detectedLocations = new List<DetectedLocation>();
+            for (var i = 0; i < distances.Length; i++)
+            {
+                detectedLocations.Add(new DetectedLocation(stepAngleDegrees * i + offsetDegrees, distances[i]));
+            }
+            foreach (var filter in locationFilters)
+            {
+                detectedLocations = filter.Filter(detectedLocations);
+            }
+
+            // pass a copy of list since the original list is not thread safe
+            var copy = new List<DetectedLocation>();
+            copy.AddRange(detectedLocations.Select(i => (DetectedLocation)i.Clone()));
+            if (OnLocationDetected != null)
+            {
+                OnLocationDetected(copy);
             }
         }
 
@@ -245,6 +271,16 @@ namespace Urg
         public void GetDistancesMulti(int sendCount, int bulkCount = 1, int skipCount = 0)
         {
             Write(string.Format(COMMAND_GET_DISTANCE_MULTI + "{0:D4}{1:D4}{2:D2}{3:D1}{4:D2}\n", startIndex, endIndex, bulkCount, skipCount, sendCount));
+        }
+
+        public void AddFilter(IFilter filter)
+        {
+            this.locationFilters.Add(filter);
+        }
+
+        public void RemoveAllFilters()
+        {
+            this.locationFilters.Clear();
         }
 
         void decodeMulti(byte[] code, float[] output, int numOfByte, int outputOffset = 0)
