@@ -69,26 +69,23 @@ namespace Urg
                 }
             }
 
-
-            lock (syncLock)
+            var locs = this.locations;
+            int index = 0;
+            foreach (var loc in locs)
             {
-                int index = 0;
-                foreach (var location in locations)
+                Vector3 worldPos = new Vector3(0, 0, 0);
+                var inRegion = affineConverter.Sensor2WorldPosition(loc.ToPosition2D(), out worldPos);
+                if (inRegion && index < debugObjects.Count)
                 {
-                    Vector3 worldPos = new Vector3(0, 0, 0);
-                    var inRegion = affineConverter.Sensor2WorldPosition(location.ToPosition2D(), out worldPos);
-                    if (inRegion && index < debugObjects.Count)
-                    {
-                        //Gizmos.DrawCube(worldPos, new Vector3(0.1f, 0.1f, 0.1f));
-                        debugObjects[index].transform.position = worldPos;
-                        index++;
-                    }
+                    //Gizmos.DrawCube(worldPos, new Vector3(0.1f, 0.1f, 0.1f));
+                    debugObjects[index].transform.position = worldPos;
+                    index++;
                 }
+            }
 
-                for (var i = index; i < debugObjects.Count; i++)
-                {
-                    debugObjects[index].transform.position = new Vector3(100, 100, 100);
-                }
+            for (var i = index; i < debugObjects.Count; i++)
+            {
+                debugObjects[index].transform.position = new Vector3(100, 100, 100);
             }
         }
 
@@ -100,10 +97,7 @@ namespace Urg
         void Urg_OnLocationDetected(List<DetectedLocation> locations)
         {
             // this is called outside main thread.
-            lock (syncLock)
-            {
-                this.locations = locations;
-            }
+            this.locations = locations;
         }
 
         private static Vector3 Screen2WorldPosition(Vector2 screenPosition, Camera camera, Plane basePlane)

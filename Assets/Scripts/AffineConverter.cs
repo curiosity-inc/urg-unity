@@ -7,10 +7,10 @@ namespace Urg
     public class AffineConverter
     {
         private Vector2[] sensorCorners;
-        private Vector3[] screenCorners;
-        private Vector3 screenBasis1;
-        private Vector3 screenBasis2;
-        private Vector3 screenBasis3;
+        private Vector3[] worldCorners;
+        private Vector3 worldBasis1;
+        private Vector3 worldBasis2;
+        private Vector3 worldBasis3;
         private Vector2 sensorBasis1;
         private Vector2 sensorBasis2;
         private Vector2 sensorBasis3;
@@ -20,12 +20,12 @@ namespace Urg
 
         public AffineConverter(Vector2[] sensorCorners, Vector3[] worldCorners)
         {
-            this.screenCorners = worldCorners;
+            this.worldCorners = worldCorners;
             this.sensorCorners = sensorCorners;
 
-            screenBasis1 = worldCorners[0] - worldCorners[3];
-            screenBasis2 = worldCorners[1] - worldCorners[3];
-            screenBasis3 = worldCorners[2] - worldCorners[3];
+            worldBasis1 = worldCorners[0] - worldCorners[3];
+            worldBasis2 = worldCorners[1] - worldCorners[3];
+            worldBasis3 = worldCorners[2] - worldCorners[3];
 
             sensorBasis1 = sensorCorners[0] - sensorCorners[3];
             sensorBasis2 = sensorCorners[1] - sensorCorners[3];
@@ -55,13 +55,13 @@ namespace Urg
             if (value1 >= 0 && value2 >= 0 && value1 + value2 <= 1)
             {
                 // is in triangle composed with kitei1 and kitei2
-                worldPos = value1 * screenBasis1 + value2 * screenBasis2 + screenCorners[3];
+                worldPos = value1 * worldBasis1 + value2 * worldBasis2 + worldCorners[3];
                 return true;
             }
             else if (value3 >= 0 && value4 >= 0 && value3 + value4 <= 1)
             {
                 // is in triangle composed with kitei2 and kitei3
-                worldPos = value3 * screenBasis2 + value4 * screenBasis3 + screenCorners[3];
+                worldPos = value3 * worldBasis2 + value4 * worldBasis3 + worldCorners[3];
                 return true;
             }
             worldPos = Vector3.zero;

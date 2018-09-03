@@ -18,7 +18,7 @@ namespace Urg
 
         public Vector2 ToPosition2D()
         {
-            var pos3d = ToPosition(Vector3.forward, Vector3.up);
+            var pos3d = ToPosition();
             return new Vector2(pos3d.x, pos3d.z);
         }
 
