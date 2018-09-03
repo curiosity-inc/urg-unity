@@ -18,17 +18,17 @@ namespace Urg
         {
             urg.OnDistanceReceived += Urg_OnDistanceReceived;
             urg.OnLocationDetected += Urg_OnLocationDetected;
-            urg.AddFilter(new MedianFilter());
-            urg.AddFilter(new ClusteringFilter(0.2f));
+            urg.AddFilter(new MedianFilter(3));
+            urg.AddFilter(new ClusteringFilter(0.15f));
 
             var cam = Camera.main;
             var plane = new Plane(Vector3.up, Vector3.zero);
 
             var sensorCorners = new Vector2[4];
-            sensorCorners[0] = new Vector2(2, 1);
-            sensorCorners[1] = new Vector2(2, -1);
-            sensorCorners[2] = new Vector2(0.3f, -1);
-            sensorCorners[3] = new Vector2(0.3f, 1);
+            sensorCorners[0] = new Vector2(1.5f, 0.5f);
+            sensorCorners[1] = new Vector2(1.5f, -0.5f);
+            sensorCorners[2] = new Vector2(0.5f, -0.5f);
+            sensorCorners[3] = new Vector2(0.5f, 0.5f);
 
             var worldCorners = new Vector3[4];
             worldCorners[0] = Screen2WorldPosition(new Vector2(0, Screen.height), cam, plane);
@@ -85,7 +85,7 @@ namespace Urg
 
             for (var i = index; i < debugObjects.Count; i++)
             {
-                debugObjects[index].transform.position = new Vector3(100, 100, 100);
+                debugObjects[i].transform.position = new Vector3(100, 100, 100);
             }
         }
 
