@@ -9,6 +9,7 @@ public class EthernetTransport : MonoBehaviour, ITransport
 {
     public string ipAddress = "192.168.0.10";
     public int port = 10940;
+    private static readonly float CONNECT_TIMEOUT = 1.0f;
     private TcpClient tcpClient;
     private NetworkStream stream;
     private TextReader reader;
@@ -29,7 +30,18 @@ public class EthernetTransport : MonoBehaviour, ITransport
         {
             tcpClient = new TcpClient();
             tcpClient.ReceiveTimeout = 5000;
-            tcpClient.Connect(ipAddress, port);
+            var result = tcpClient.BeginConnect(ipAddress, port, null, null);
+            var success = result.AsyncWaitHandle.WaitOne(TimeSpan.FromSeconds(CONNECT_TIMEOUT));
+
+            if (!success)
+            {
+                return false;
+            }
+
+            // we have connected
+            tcpClient.EndConnect(result);
+
+            // tcpClient.Connect(ipAddress, port);
             stream = tcpClient.GetStream();
             reader = new StreamReader(stream);
         }

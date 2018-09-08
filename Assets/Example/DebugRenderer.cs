@@ -9,15 +9,19 @@ namespace Urg
         public UrgSensor urg;
 
         private float[] distances;
-        private List<DetectedLocation> locations;
+        private List<DetectedLocation> locations = new List<DetectedLocation>();
         private AffineConverter affineConverter;
         private List<GameObject> debugObjects;
         private Object syncLock = new Object();
 
         void Awake()
         {
+            // delegate method to receive raw distance data from sensor.
             urg.OnDistanceReceived += Urg_OnDistanceReceived;
+
+            // delegate method to receive filtered detected locations.
             urg.OnLocationDetected += Urg_OnLocationDetected;
+
             urg.AddFilter(new MedianFilter(3));
             urg.AddFilter(new ClusteringFilter(0.15f));
 
