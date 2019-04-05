@@ -7,11 +7,13 @@ namespace Urg
 {
     public class DetectedLocation : ICloneable
     {
+        public int index;
         public float angle;
         public float distance;
 
-        public DetectedLocation(float angle, float distance)
+        public DetectedLocation(int index, float angle, float distance)
         {
+            this.index = index;
             this.angle = angle;
             this.distance = distance;
         }
@@ -34,7 +36,7 @@ namespace Urg
 
         public object Clone()
         {
-            return new DetectedLocation(this.angle, this.distance);
+            return new DetectedLocation(this.index, this.angle, this.distance);
         }
     }
 }

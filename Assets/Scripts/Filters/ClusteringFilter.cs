@@ -4,6 +4,7 @@ using UnityEngine;
 
 namespace Urg
 {
+    // FIXME: Since this filter destroys index of DetectedLocation, it does not keep that value anymore.
     public class ClusteringFilter : IFilter
     {
         private int[] clusteringNumber;
@@ -19,6 +20,7 @@ namespace Urg
             this.minDistance = minDistance;
         }
 
+        // TODO this filter implicitly assumes that inputList is ordered by its original index.
         public List<DetectedLocation> Filter(List<DetectedLocation> inputList)
         {
             if (clusteringNumber == null)
@@ -53,7 +55,7 @@ namespace Urg
                 {
                     float avgAngle = sumOfAngle / numOfSequence;
                     float avgDistance = sumOfDistance / numOfSequence;
-                    detectedLocations.Add(new DetectedLocation(avgAngle, avgDistance));
+                    detectedLocations.Add(new DetectedLocation(-1, avgAngle, avgDistance));
                     sumOfAngle = 0;
                     sumOfDistance = 0;
                     numOfSequence = 0;
@@ -62,7 +64,7 @@ namespace Urg
                 sumOfDistance += inputList[i].distance;
                 numOfSequence++;
             }
-            detectedLocations.Add(new DetectedLocation(sumOfAngle / numOfSequence, sumOfDistance / numOfSequence));
+            detectedLocations.Add(new DetectedLocation(-1, sumOfAngle / numOfSequence, sumOfDistance / numOfSequence));
             return detectedLocations;
             // Debug.Log(string.Format("clustered {0} {1}", numOfCluster, detectedLocations.Count));
         }

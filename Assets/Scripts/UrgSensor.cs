@@ -210,7 +210,7 @@ namespace Urg
             var detectedLocations = new List<DetectedLocation>();
             for (var i = 0; i < distances.Length; i++)
             {
-                detectedLocations.Add(new DetectedLocation(stepAngleDegrees * i + offsetDegrees, distances[i]));
+                detectedLocations.Add(new DetectedLocation(i, stepAngleDegrees * i + offsetDegrees, distances[i]));
             }
             foreach (var filter in locationFilters)
             {

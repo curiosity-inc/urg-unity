@@ -22,7 +22,7 @@ namespace Urg
             // delegate method to receive filtered detected locations.
             urg.OnLocationDetected += Urg_OnLocationDetected;
 
-            urg.AddFilter(new MedianFilter(3));
+            urg.AddFilter(new SpatialMedianFilter(3));
             urg.AddFilter(new ClusteringFilter(0.15f));
 
             var cam = Camera.main;
