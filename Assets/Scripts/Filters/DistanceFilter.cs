@@ -28,7 +28,7 @@ namespace Urg
                 }
             }
             int filteredCount = list.Count;
-            UnityEngine.Debug.LogFormat("{0} => {1}", allCount, filteredCount);
+            //UnityEngine.Debug.LogFormat("{0} => {1}", allCount, filteredCount);
             return list;
         }
     }

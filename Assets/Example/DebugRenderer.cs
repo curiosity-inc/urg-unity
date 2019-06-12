@@ -28,8 +28,8 @@ namespace Urg
             // uncomment if you need some filters before clustering
             //urg.AddFilter(new SpatialMedianFilter(3));
             urg.AddFilter(new DistanceFilter(2.25f));
-            //urg.SetClusterExtraction(new EuclidianClusterExtraction(0.1f));
-            cluster = new EuclidianClusterExtraction(0.1f);
+            urg.SetClusterExtraction(new EuclidianClusterExtraction(0.1f));
+            //cluster = new EuclidianClusterExtraction(0.1f);
 
             var cam = Camera.main;
             var plane = new Plane(Vector3.up, Vector3.zero);
@@ -84,7 +84,7 @@ namespace Urg
                 return;
             }
 
-            clusterIndices = cluster.ExtractClusters(locations);
+            //clusterIndices = cluster.ExtractClusters(locations);
 
             var locs = this.locations;
             int index = 0;
@@ -121,7 +121,7 @@ namespace Urg
         void Urg_OnDistanceReceived(DistanceRecord data)
         {
             Debug.LogFormat("distance received: SCIP timestamp={0} unity timer={1}", data.Timestamp, stopwatch.ElapsedMilliseconds);
-            //Debug.LogFormat("cluster count: {0}", data.ClusteredIndices.Count);
+            Debug.LogFormat("cluster count: {0}", data.ClusteredIndices.Count);
             this.rawDistances = data.RawDistances;
             this.locations = data.FilteredResults;
             this.clusterIndices = data.ClusteredIndices;
