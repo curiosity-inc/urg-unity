@@ -26,7 +26,8 @@ namespace Urg
             urg.OnDistanceReceived += Urg_OnDistanceReceived;
 
             // uncomment if you need some filters before clustering
-            //urg.AddFilter(new SpatialMedianFilter(3));
+            urg.AddFilter(new TemporalMedianFilter(3));
+            urg.AddFilter(new SpatialMedianFilter(3));
             urg.AddFilter(new DistanceFilter(2.25f));
             urg.SetClusterExtraction(new EuclidianClusterExtraction(0.1f));
             //cluster = new EuclidianClusterExtraction(0.1f);

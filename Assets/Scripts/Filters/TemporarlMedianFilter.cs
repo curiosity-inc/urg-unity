@@ -59,6 +59,7 @@ namespace Urg
             List<DetectedLocation> tmp = new List<DetectedLocation>();
             for (var i = 0; i < inputList.Count; i++)
             {
+                tmp.Clear();
                 for (var j = 0; j < length; j++) {
                     tmp.Add(queue.ElementAt(j).ElementAt(i));
                 }
