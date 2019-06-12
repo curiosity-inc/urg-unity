@@ -13,17 +13,19 @@ namespace Urg
         private AffineConverter affineConverter;
         private List<GameObject> debugObjects;
         private Object syncLock = new Object();
+        private System.Diagnostics.Stopwatch stopwatch;
 
         void Awake()
         {
-            // delegate method to receive raw distance data from sensor.
+            stopwatch = new System.Diagnostics.Stopwatch();
+            stopwatch.Start();
+
+            // delegate method to be triggered when the new data is received from sensor.
             urg.OnDistanceReceived += Urg_OnDistanceReceived;
 
-            // delegate method to receive filtered detected locations.
-            urg.OnLocationDetected += Urg_OnLocationDetected;
-
-            urg.AddFilter(new SpatialMedianFilter(3));
-            urg.AddFilter(new ClusteringFilter(0.15f));
+            // uncomment if you need some filters before clustering
+            //urg.AddFilter(new SpatialMedianFilter(3));
+            urg.SetClusterExtraction(new EuclidianClusterExtraction());
 
             var cam = Camera.main;
             var plane = new Plane(Vector3.up, Vector3.zero);
@@ -93,15 +95,11 @@ namespace Urg
             }
         }
 
-        void Urg_OnDistanceReceived(float[] rawDistances)
+        void Urg_OnDistanceReceived(DistanceRecord data)
         {
-            this.distances = rawDistances;
-        }
-
-        void Urg_OnLocationDetected(List<DetectedLocation> locations)
-        {
-            // this is called outside main thread.
-            this.locations = locations;
+            Debug.LogFormat("distance received: SCIP timestamp={0} unity timer={1}", data.Timestamp, stopwatch.ElapsedMilliseconds);
+            this.distances = data.RawDistances;
+            this.locations = data.FilteredResults;
         }
 
         private static Vector3 Screen2WorldPosition(Vector2 screenPosition, Camera camera, Plane basePlane)

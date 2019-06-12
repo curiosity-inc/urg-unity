@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Urg
 {
-    // FIXME: Since this filter destroys index of DetectedLocation, it does not keep that value anymore.
+    [System.Obsolete("Use EuclidianClusterExtraction class instead.")]
     public class ClusteringFilter : IFilter
     {
         private int[] clusteringNumber;

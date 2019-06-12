@@ -32,24 +32,22 @@ namespace Urg
             }
         }
 
-        public delegate void DistanceReceivedEventHandler(float[] rawDistances);
+        public delegate void DistanceReceivedEventHandler(DistanceRecord data);
         public event DistanceReceivedEventHandler OnDistanceReceived;
 
-        public delegate void LocationDetectedEventHandler(List<DetectedLocation> locations);
-        public event LocationDetectedEventHandler OnLocationDetected;
+        List<IFilter> locationFilters = new List<IFilter>();
+        IClusterExtraction clusterExtraction;
 
-        private List<IFilter> locationFilters = new List<IFilter>();
+        bool isRunning = false;
+        Thread thread;
+        float[] distances;
 
-        private bool isRunning = false;
-        private Thread thread;
-        private float[] distances;
-
-        private readonly string COMMAND_GET_DISTANCE_ONCE = "GD";
-        private readonly string COMMAND_GET_DISTANCE_MULTI = "MD";
-        private readonly string COMMAND_BEGIN_SCANNING = "BM";
-        private readonly string COMMAND_STOP_SCANNING = "QT";
-        private readonly string STATUS_SUCCESS = "00";
-        private readonly string STATUS_GET_DISTANCE_SUCCESS = "99";
+        readonly string COMMAND_GET_DISTANCE_ONCE = "GD";
+        readonly string COMMAND_GET_DISTANCE_MULTI = "MD";
+        readonly string COMMAND_BEGIN_SCANNING = "BM";
+        readonly string COMMAND_STOP_SCANNING = "QT";
+        readonly string STATUS_SUCCESS = "00";
+        readonly string STATUS_GET_DISTANCE_SUCCESS = "99";
 
         public int DistanceLength
         {
@@ -151,25 +149,25 @@ namespace Urg
                 Debug.Log(string.Format("{0}:{1}", command, status));
             }
 
-            if (command.StartsWith(COMMAND_GET_DISTANCE_ONCE))
+            if (command.StartsWith(COMMAND_GET_DISTANCE_ONCE, System.StringComparison.Ordinal))
             {
-                if (status.StartsWith(STATUS_SUCCESS))
+                if (status.StartsWith(STATUS_SUCCESS, System.StringComparison.Ordinal))
                 {
                     ReadDistanceData();
                 }
             }
-            else if (command.StartsWith(COMMAND_GET_DISTANCE_MULTI))
+            else if (command.StartsWith(COMMAND_GET_DISTANCE_MULTI, System.StringComparison.Ordinal))
             {
-                if (status.StartsWith(STATUS_SUCCESS))
+                if (status.StartsWith(STATUS_SUCCESS, System.StringComparison.Ordinal))
                 {
                     transport.ReadLine();
                 }
-                else if (status.StartsWith(STATUS_GET_DISTANCE_SUCCESS))
+                else if (status.StartsWith(STATUS_GET_DISTANCE_SUCCESS, System.StringComparison.Ordinal))
                 {
                     ReadDistanceData();
                 }
             }
-            else if (command.StartsWith("SCIP"))
+            else if (command.StartsWith("SCIP", System.StringComparison.Ordinal))
             {
                 // read another new line.
                 transport.ReadLine();
@@ -182,8 +180,18 @@ namespace Urg
 
         private void ReadDistanceData()
         {
-            // string timestamp = 
-            transport.ReadLine();
+            var distanceRecord = new DistanceRecord();
+
+            string timestamp = transport.ReadLine();
+            string actualTimestamp = timestamp.Substring(0, timestamp.Length - 1);
+            var timestampBytes = Encoding.GetEncoding("UTF-8").GetBytes(actualTimestamp);
+            if (timestampBytes.Length == 4)
+            {
+                int[] timestampTmp = new int[1];
+                DecodeMulti(timestampBytes, timestampTmp, 4);
+                distanceRecord.Timestamp = timestampTmp[0];
+            }
+
             string data = "";
 
             while (true)
@@ -201,11 +209,8 @@ namespace Urg
             }
             // Debug.Log(data);
             var dataBytes = Encoding.GetEncoding("UTF-8").GetBytes(data);
-            decodeMulti(dataBytes, distances, 3);
-            if (OnDistanceReceived != null)
-            {
-                OnDistanceReceived(distances);
-            }
+            DecodeMulti(dataBytes, distances, 3);
+            distanceRecord.RawDistances = distances;
 
             var detectedLocations = new List<DetectedLocation>();
             for (var i = 0; i < distances.Length; i++)
@@ -220,10 +225,14 @@ namespace Urg
             // pass a copy of list since the original list is not thread safe
             var copy = new List<DetectedLocation>();
             copy.AddRange(detectedLocations.Select(i => (DetectedLocation)i.Clone()));
-            if (OnLocationDetected != null)
+            distanceRecord.FilteredResults = copy;
+
+            if (clusterExtraction != null)
             {
-                OnLocationDetected(copy);
+                distanceRecord.ClusteredIndices = clusterExtraction.ExtractClusters(copy);
             }
+
+            OnDistanceReceived?.Invoke(distanceRecord);
         }
 
         public void Write(string message)
@@ -283,7 +292,20 @@ namespace Urg
             this.locationFilters.Clear();
         }
 
-        void decodeMulti(byte[] code, float[] output, int numOfByte, int outputOffset = 0)
+        public void SetClusterExtraction(IClusterExtraction clusterExtraction)
+        {
+            this.clusterExtraction = clusterExtraction;
+        }
+
+        public void ClearClusterExtraction()
+        {
+            this.clusterExtraction = null;
+        }
+
+        /**
+         * nビットキャラクタエンコードを1000倍されたfloatの配列としてデコードする
+         */
+        void DecodeMulti(byte[] code, float[] output, int numOfByte, int outputOffset = 0)
         {
             int index = 0;
             for (int i = 0; i < code.Length;)
@@ -301,7 +323,25 @@ namespace Urg
             }
         }
 
-        int decode(string code, int numOfByte)
+        void DecodeMulti(byte[] code, int[] output, int numOfByte, int outputOffset = 0)
+        {
+            int index = 0;
+            for (int i = 0; i < code.Length;)
+            {
+                int value = 0;
+                for (int j = 0; j < numOfByte; ++j)
+                {
+                    value <<= 6;
+                    value &= ~0x3f;
+                    value |= code[i + j] - 0x30;
+                }
+                i += numOfByte;
+                output[outputOffset + index] = value;
+                index++;
+            }
+        }
+
+        int Decode(string code, int numOfByte)
         {
             int value = 0;
             int i;

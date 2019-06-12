@@ -7,15 +7,15 @@ using UnityEngine;
 
 namespace Urg
 {
-    public class EuclidianClusteringFilter
+    public class EuclidianClusterExtraction: IClusterExtraction
     {
         private float distanceThreshold;
-        public EuclidianClusteringFilter(float distanceThreshold = 0.1f)
+        public EuclidianClusterExtraction(float distanceThreshold = 0.1f)
         {
             this.distanceThreshold = distanceThreshold;
         }
 
-        public List<List<int>> extractClusters(List<DetectedLocation> locations)
+        public List<List<int>> ExtractClusters(List<DetectedLocation> locations)
         {
             var kdTree = new KdTree<float, int>(2, new FloatMath());
             for (int i = 0; i < locations.Count; i++)
