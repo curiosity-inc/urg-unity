@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using KdTree;
 using KdTree.Math;
 using System.Linq;
+using UnityEngine;
 
 namespace Urg
 {
@@ -17,28 +18,32 @@ namespace Urg
         public List<List<int>> extractClusters(List<DetectedLocation> locations)
         {
             var kdTree = new KdTree<float, int>(2, new FloatMath());
-            foreach (var loc in locations)
+            for (int i = 0; i < locations.Count; i++)
             {
+                var loc = locations[i];
                 var p = loc.ToPosition2D();
-                kdTree.Add(new float[] { p.x, p.y }, loc.index);
+                kdTree.Add(new float[] { p.x, p.y }, i);
             }
             List<List<int>> clusters = new List<List<int>>();
             var processed = new bool[locations.Count];
-            foreach (var loc in locations)
+            for (int i = 0; i < locations.Count; i++)
             {
-                if (processed[loc.index])
+                if (processed[i])
                 {
                     continue;
                 }
+                var loc = locations[i];
 
                 var p = loc.ToPosition2D();
                 var q = new Queue<int>();
-                q.Enqueue(loc.index);
-                processed[loc.index] = true;
+                q.Enqueue(i);
+                processed[i] = true;
                 int index = 0;
                 while (index < q.Count)
                 {
-                    var neighbors = kdTree.RadialSearch(new float[] { p.x, p.y }, distanceThreshold);
+                    var targetIndex = q.ElementAt<int>(index);
+                    var tp = locations[targetIndex].ToPosition2D();
+                    var neighbors = kdTree.RadialSearch(new float[] { tp.x, tp.y }, distanceThreshold);
                     foreach (var neighbor in neighbors)
                     {
                         if (processed[neighbor.Value])
