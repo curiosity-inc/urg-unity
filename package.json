@@ -1,7 +1,7 @@
 {
   "name": "jp.curiosity-inc.urg-unity",
   "displayName": "urg-unity",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "A unity pluguin for Urg sensor.",
   "keywords": [
     "unity3d",
