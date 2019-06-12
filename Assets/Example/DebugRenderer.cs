@@ -8,12 +8,14 @@ namespace Urg
     {
         public UrgSensor urg;
 
-        private float[] distances;
+        private float[] rawDistances;
         private List<DetectedLocation> locations = new List<DetectedLocation>();
+        private List<List<int>> clusterIndices;
         private AffineConverter affineConverter;
         private List<GameObject> debugObjects;
         private Object syncLock = new Object();
         private System.Diagnostics.Stopwatch stopwatch;
+        EuclidianClusterExtraction cluster;
 
         void Awake()
         {
@@ -25,16 +27,18 @@ namespace Urg
 
             // uncomment if you need some filters before clustering
             //urg.AddFilter(new SpatialMedianFilter(3));
-            urg.SetClusterExtraction(new EuclidianClusterExtraction());
+            urg.AddFilter(new DistanceFilter(2.25f));
+            //urg.SetClusterExtraction(new EuclidianClusterExtraction(0.1f));
+            cluster = new EuclidianClusterExtraction(0.1f);
 
             var cam = Camera.main;
             var plane = new Plane(Vector3.up, Vector3.zero);
 
             var sensorCorners = new Vector2[4];
-            sensorCorners[0] = new Vector2(1.5f, 0.5f);
-            sensorCorners[1] = new Vector2(1.5f, -0.5f);
-            sensorCorners[2] = new Vector2(0.5f, -0.5f);
-            sensorCorners[3] = new Vector2(0.5f, 0.5f);
+            sensorCorners[0] = new Vector2(1.5f, 1f);
+            sensorCorners[1] = new Vector2(1.5f, -1f);
+            sensorCorners[2] = new Vector2(0.2f, -1f);
+            sensorCorners[3] = new Vector2(0.2f, 1f);
 
             var worldCorners = new Vector3[4];
             worldCorners[0] = Screen2WorldPosition(new Vector2(0, Screen.height), cam, plane);
@@ -60,11 +64,11 @@ namespace Urg
                 return;
             }
 
-            if (distances != null && distances.Length > 0)
+            if (rawDistances != null && rawDistances.Length > 0)
             {
-                for (int i = 0; i < distances.Length; i++)
+                for (int i = 0; i < rawDistances.Length; i++)
                 {
-                    float distance = distances[i];
+                    float distance = rawDistances[i];
                     float angle = urg.StepAngleRadians * i + urg.OffsetRadians;
                     var cos = Mathf.Cos(angle);
                     var sin = Mathf.Sin(angle);
@@ -75,12 +79,31 @@ namespace Urg
                 }
             }
 
+            if (locations == null)
+            {
+                return;
+            }
+
+            clusterIndices = cluster.ExtractClusters(locations);
+
             var locs = this.locations;
             int index = 0;
-            foreach (var loc in locs)
+            for (var i = 0; i < clusterIndices.Count; i++)
             {
+                if (clusterIndices[i].Count < 20)
+                {
+                    continue;
+                }
+                //Debug.Log(clusterIndices[i].Count);
+                Vector2 center = Vector2.zero;
+                foreach (var j in clusterIndices[i])
+                {
+                    center += locations[j].ToPosition2D();
+                }
+                center /= (float)clusterIndices[i].Count;
+
                 Vector3 worldPos = new Vector3(0, 0, 0);
-                var inRegion = affineConverter.Sensor2WorldPosition(loc.ToPosition2D(), out worldPos);
+                var inRegion = affineConverter.Sensor2WorldPosition(center, out worldPos);
                 if (inRegion && index < debugObjects.Count)
                 {
                     //Gizmos.DrawCube(worldPos, new Vector3(0.1f, 0.1f, 0.1f));
@@ -98,8 +121,10 @@ namespace Urg
         void Urg_OnDistanceReceived(DistanceRecord data)
         {
             Debug.LogFormat("distance received: SCIP timestamp={0} unity timer={1}", data.Timestamp, stopwatch.ElapsedMilliseconds);
-            this.distances = data.RawDistances;
+            //Debug.LogFormat("cluster count: {0}", data.ClusteredIndices.Count);
+            this.rawDistances = data.RawDistances;
             this.locations = data.FilteredResults;
+            this.clusterIndices = data.ClusteredIndices;
         }
 
         private static Vector3 Screen2WorldPosition(Vector2 screenPosition, Camera camera, Plane basePlane)
