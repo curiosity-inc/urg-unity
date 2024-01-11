@@ -4,7 +4,8 @@ URG a.k.a. Sokuiki sensor (測域センサー) library for Unity written in pure
 
 ## Install
 
-Import an unitypackage file found in Release page, or use npm (Node Package Manager) and unity3d-package-syncer module to install this library.
+### Install via UPM package
+You can add `https://github.com/curiosity-inc/urg-unity.git?path=Packages/jp.curiosity-inc.urg-unity` to Package Manager.
 
 ## Get started with your scene.
 
