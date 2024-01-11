@@ -7,6 +7,8 @@ URG a.k.a. Sokuiki sensor (測域センサー) library for Unity written in pure
 ### Install via UPM package
 You can add `https://github.com/curiosity-inc/urg-unity.git?path=Packages/jp.curiosity-inc.urg-unity` to Package Manager.
 
+Note that, in API compatibility level, you need to specify `.NET Framework` rather than `.NET Standard 2.1` because `System.IO.Ports` library is required.
+
 ## Get started with your scene.
 
 1 (a) If you can find your sensor name under `Prefabs` folder, just drag'drop it to your scene.
