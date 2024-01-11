@@ -87,6 +87,10 @@ namespace Urg
                 thread = new Thread(ReadLoop);
                 thread.Start();
             }
+            else
+            {
+                Debug.LogWarning("Failed to open sensor connection.");
+            }
         }
 
         void Update()

@@ -30,7 +30,7 @@ namespace Urg
             urg.AddFilter(new SpatialMedianFilter(3));
             urg.AddFilter(new DistanceFilter(2.25f));
             urg.SetClusterExtraction(new EuclidianClusterExtraction(0.1f));
-            //cluster = new EuclidianClusterExtraction(0.1f);
+            cluster = new EuclidianClusterExtraction(0.1f);
 
             var cam = Camera.main;
             var plane = new Plane(Vector3.up, Vector3.zero);
@@ -85,13 +85,13 @@ namespace Urg
                 return;
             }
 
-            //clusterIndices = cluster.ExtractClusters(locations);
+            clusterIndices = cluster.ExtractClusters(locations);
 
             var locs = this.locations;
             int index = 0;
             for (var i = 0; i < clusterIndices.Count; i++)
             {
-                if (clusterIndices[i].Count < 20)
+                if (clusterIndices[i].Count < 2)
                 {
                     continue;
                 }
