@@ -18,7 +18,7 @@
         {
             "displayName": "DebugRenderer",
             "description": "Sample to render sensor info in scene view and game view.",
-            "path": "Samples/DebugRenderer"
+            "path": "Samples~/DebugRenderer"
         }
     ]
 }
