@@ -47,6 +47,7 @@ namespace Urg
             worldCorners[2] = Screen2WorldPosition(new Vector2(Screen.width, 0), cam, plane);
             worldCorners[3] = Screen2WorldPosition(new Vector2(0, 0), cam, plane);
             affineConverter = new AffineConverter(sensorCorners, worldCorners);
+            urg.AddFilter(new AffineConverterFilter(affineConverter));
 
             debugObjects = new List<GameObject>();
             for (var i = 0; i < 100; i++)
