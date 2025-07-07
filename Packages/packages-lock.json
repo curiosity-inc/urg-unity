@@ -1,14 +1,5 @@
 {
   "dependencies": {
-    "com.iam1337.extosc": {
-      "version": "1.20.2",
-      "depth": 0,
-      "source": "registry",
-      "dependencies": {
-        "com.unity.ugui": "1.0.0"
-      },
-      "url": "https://package.openupm.com"
-    },
     "com.unity.2d.sprite": {
       "version": "1.0.0",
       "depth": 0,
